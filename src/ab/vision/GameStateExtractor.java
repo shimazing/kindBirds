@@ -150,7 +150,7 @@ public class GameStateExtractor {
 		return GameState.PLAYING;
 	}
 
-	public int getScoreInGame(BufferedImage screenshot) {
+	public static int getScoreInGame(BufferedImage screenshot) {
 		// crop score image
 		BufferedImage scoreImage = screenshot.getSubimage(632, 21, 200, 32);
 
