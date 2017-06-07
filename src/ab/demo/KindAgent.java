@@ -36,6 +36,7 @@ import ab.demo.other.Shot;
 import ab.planner.TrajectoryPlanner;
 import ab.utils.StateUtil;
 import ab.vision.ABObject;
+import ab.vision.ABType;
 import ab.vision.GameStateExtractor;
 import ab.vision.GameStateExtractor.GameState;
 import ab.vision.ShowSeg;
@@ -111,7 +112,7 @@ public class KindAgent implements Runnable{
 					printWriter.println(stateJson);
 					printWriter.flush();
 					
-					printWriter.close();
+					//printWriter.close();
 
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
@@ -142,7 +143,7 @@ public class KindAgent implements Runnable{
 					printWriter.println(stateJson);
 					printWriter.flush();
 					
-					printWriter.close();
+					//printWriter.close();
 
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
@@ -206,6 +207,7 @@ public class KindAgent implements Runnable{
 		Vision vision = new Vision(screenshot);
 		int numBirds = vision.findBirdsRealShape().size();
 		int reward;
+		ABType birdType = aRobot.getBirdTypeOnSling();
 		if (firstShot) {
 			int score =GameStateExtractor.getScoreInGame(screenshot);
 			System.out.println("current score : " + String.valueOf(score));
@@ -269,6 +271,7 @@ public class KindAgent implements Runnable{
 				stateJson.put("gamestate", String.valueOf(gamestate));
 				stateJson.put("reward", String.valueOf(reward));
 				stateJson.put("birds", String.valueOf(numBirds));
+				stateJson.put("birdtype", birdType);
 			
 				System.out.println(stateJson);
 				
