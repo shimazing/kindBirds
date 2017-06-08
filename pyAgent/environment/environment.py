@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import socket
 import json
+from PIL import Image
 
 class Environment(object):
     def __init__(self):
@@ -28,7 +29,7 @@ class Environment(object):
             state = np.asarray(Image.open("../screenshot.png"))
             state = state / 255.
             n_birds = eval(data_dict["birds"])
-            birdtype = eval(data_dict["birdtype"]) - 4 # from 0 to 2
+            birdtype = eval(data_dict["birdtype"]) # from 0 to 2
         else:
             state = n_birds = birdtype = None
         print("Get state and reward")
