@@ -34,7 +34,7 @@ class Agent(object):
         except AttributeError:
             self.depth = 3 # number of channels (3 RGB channel)
 
-        self.observation_dims = [105, 60] + [self.depth]
+        self.observation_dims = [60, 105] + [self.depth]
 
         self.states = tf.placeholder('float32',
                 [None] + self.observation_dims, name='states')

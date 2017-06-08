@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import socket
 import json
+import numpy as np
 from PIL import Image
 
 class Environment(object):
@@ -57,8 +58,9 @@ class Environment(object):
 
     def act(self, theta, v):
         action = {'theta': str(theta), 'v': str(v)}
-        action = json.dumps(action)
-        self.conn.send(action + '\n')
+        action = json.dumps(action) + '\n'
+        action = bytes(action, "utf-8")
+        self.conn.send(action)
         print("Send Action", action)
 
     '''
