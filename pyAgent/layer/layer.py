@@ -49,12 +49,14 @@ def linear(input_,
     input_ = tf.reshape(input_, [-1, reduce(lambda x, y: x * y, shape[1:])])
     shape = input_.get_shape().as_list()
 
-  if birdtypes is not None:\
+  shape_1 = shape[1]
+
+  if birdtypes is not None:
     assert len(birdtypes.get_shape().as_list()) == 2
     input_ = tf.concat([input_, birdtypes], axis=-1)
-
+    shape_1 = shape_1 + 3
   with tf.variable_scope(name):
-    w = tf.get_variable('w', [shape[1], output_size], tf.float32,
+    w = tf.get_variable('w', [shape_1, output_size], tf.float32,
         initializer=weights_initializer, trainable=trainable)
     b = tf.get_variable('b', [output_size],
         initializer=biases_initializer, trainable=trainable)

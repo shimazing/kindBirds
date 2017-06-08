@@ -31,7 +31,8 @@ flags.DEFINE_float('lr', 0.00025, '...')
 flags.DEFINE_integer('depth', 3, '...')
 flags.DEFINE_string('hidden_sizes', '[]', '...')
 flags.DEFINE_integer('seed', 123, '...')
-flags.DEFINE_string('save_dir', 'savemodel')
+flags.DEFINE_string('save_dir', 'savemodel', '...')
+flags.DEFINE_integer('n_steps', 100000, '...')
 conf = flags.FLAGS
 
 tf.set_random_seed(conf.seed)
@@ -43,7 +44,7 @@ def main(*args, **kwargs):
         os.makedirs(conf.save_dir)
 
     with tf.Session() as sess:
-        env = Environement()
+        env = Environment()
         agent = Agent(sess, conf, env, name='kindAgent')
         tf.global_variables_initializer().run()
         env.create()

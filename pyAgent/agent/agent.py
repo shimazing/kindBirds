@@ -4,6 +4,8 @@ import math
 from environment.environment import Environment
 from .replay import Replay
 from layer.cnn import CNN
+import os
+import sys
 
 class Agent(object):
     def __init__(self, sess, conf, env, name='agent'):
@@ -32,7 +34,7 @@ class Agent(object):
         except AttributeError:
             self.depth = 3 # number of channels (3 RGB channel)
 
-        self.observation_dims = conf.width_and_height + [self.depth]
+        self.observation_dims = [105, 60] + [self.depth]
 
         self.states = tf.placeholder('float32',
                 [None] + self.observation_dims, name='states')
@@ -48,25 +50,29 @@ class Agent(object):
                 self.observation_dims)
 
     def build_Qnet(self):
+
         self.pred_net = CNN(
             self.sess,
-            self.states,
-            observation_dims=None,
-            output_size=self.n_actions,
-            birdtypes=self.birdtypes)
+            None,
+            self.n_actions,
+            inputs=self.states,
+            birdtypes=self.birdtypes,
+            name='pred')
+
         self.target_net = CNN(
             self.sess,
-            self.states,
-            observation_dims=None,
-            output_size=self.n_actions,
-            birdtypes=self.birdtypes)
+            None,
+            self.n_actions,
+            inputs=self.states,
+            birdtypes=self.birdtypes,
+            name='target')
         self.target_net.create_copy_op(self.pred_net)
 
-    def define_action_space(self, n_angle, n_velocity, n_tap):
+    def define_action_space(self):
         angles = np.arange(0.025, 0.5, 0.025) * math.pi
         self.n_angle = len(angles)
         taptimes = np.arange(0, 4000, 200)
-        self.n_tap = len(taptimes)
+        self.n_taptime = len(taptimes)
         self.action_space = []
         for angle in angles:
             for taptime in taptimes:
