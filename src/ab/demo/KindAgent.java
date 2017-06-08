@@ -46,7 +46,8 @@ import ab.vision.VisionUtils;
 public class KindAgent implements Runnable{
 	private ActionRobot aRobot;
 	private Random randomGenerator;
-	public int currentLevel = 1;
+	public int currentLevel;
+	public int maxLevel = 21;
 	private Map<Integer, Integer> scores = new LinkedHashMap<Integer,Integer>();
 	TrajectoryPlanner tp;
 	private boolean firstShot;
@@ -58,6 +59,7 @@ public class KindAgent implements Runnable{
 		tp = new TrajectoryPlanner();
 		firstShot = true;
 		randomGenerator = new Random();
+		currentLevel = getRandomLevel();
 		try {
 			socket = new Socket("127.0.0.1", 9090);
 		} catch (IOException e) {
@@ -73,7 +75,8 @@ public class KindAgent implements Runnable{
 		tp = new TrajectoryPlanner();
 		firstShot = true;
 		randomGenerator = new Random();
-		currentLevel = level;
+		maxLevel = level;
+		currentLevel = getRandomLevel();
 		try {
 			socket = new Socket("127.0.0.1", 9090);
 		} catch (IOException e) {
@@ -123,6 +126,7 @@ public class KindAgent implements Runnable{
 				}
 				
 				prevScore = 0;
+				currentLevel = getRandomLevel();
 				aRobot.loadLevel(currentLevel);;
 				firstShot = true;
 			}
@@ -350,6 +354,10 @@ public class KindAgent implements Runnable{
 		}
 		
 		return state;
+	}
+	
+	private int getRandomLevel() {
+		return this.randomGenerator.nextInt(this.maxLevel - 1) + 1;
 	}
 		
 	private BufferedImage scaleDown(BufferedImage srcImg) {
