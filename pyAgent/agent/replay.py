@@ -57,7 +57,7 @@ class Replay(object):
       indices.append(index)
     '''
     self.prestates = self.observations[indices_]
-    self.poststates = self.observation[indices]
+    self.poststates = self.observations[indices]
     #indices = np.array(indices)
     actions = self.actions[indices]
     rewards = self.rewards[indices]

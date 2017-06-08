@@ -88,7 +88,10 @@ public class KindAgent implements Runnable{
 		aRobot.loadLevel(currentLevel);
 		
 		while (true) {
-			GameState state = solve();
+			GameState state = aRobot.getState();
+			if (state == GameState.PLAYING) {
+				state = solve();	
+			}
 			if (state == GameState.WON) {
 				System.out.println("WIN!");
 				
@@ -195,7 +198,6 @@ public class KindAgent implements Runnable{
 	
 	public GameState solve()
 	{
-		
 		// zoom out first
 		ActionRobot.fullyZoomOut();
 		//clickOnce();

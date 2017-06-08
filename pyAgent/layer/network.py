@@ -105,7 +105,7 @@ class Network(object):
     else:
         observation = observation.reshape(shape)
         birdtype = birdtype.reshape(1, -1)
-        return self.calc_actions(self, observation, birdtype)
+        return self.calc_actions(observation, birdtype)
 
   def build_train_op(self):
     self.targets = tf.placeholder('float32', [None], name='target_q_t')

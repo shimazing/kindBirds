@@ -76,3 +76,5 @@ class CNN(Network):
           value_hidden_sizes, advantage_hidden_sizes, output_size,
           weights_initializer, biases_initializer, hidden_activation_fn,
           output_activation_fn, trainable)
+
+      self.build_train_op()

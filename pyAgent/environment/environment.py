@@ -56,8 +56,8 @@ class Environment(object):
         print(gamestate)
     '''
 
-    def act(self, theta, v):
-        action = {'theta': str(theta), 'v': str(v)}
+    def act(self, angle, taptime):
+        action = {'angle': str(angle), 'taptime': str(taptime)}
         action = json.dumps(action) + '\n'
         action = bytes(action, "utf-8")
         self.conn.send(action)

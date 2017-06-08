@@ -116,12 +116,13 @@ class Agent(object):
             if self.double_q:
                 max_actions = self.pred_net.calc_actions(poststates, postbirds)
                 targets = self.target_net.calc_outputs_with_idx(poststates,
+                        postbirds,
                     [[idx, pred_a] for idx, pred_a in enumerate(max_actions)])
             else:
                 targets = self.target_net.calc_max_outputs(poststates, postbirds)
             targets = targets * np.where(terminals, 0, 1)
             targets = rewards + self.discount * targets
-            self.pred_net.optimize(prestates, prebirds, actions, targets, lr)
+            self.pred_net.optimize(prestates, prebirds, actions, targets, self.lr)
 
             if epi % self.update_freq == self.update_freq - 1:
                 self.target_net.run_copy()
