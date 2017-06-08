@@ -357,7 +357,8 @@ public class KindAgent implements Runnable{
 	}
 	
 	private int getRandomLevel() {
-		return this.randomGenerator.nextInt(this.maxLevel - 1) + 1;
+		int randomLevel = this.randomGenerator.nextInt(this.maxLevel - 1) + 1;
+		return randomLevel;
 	}
 		
 	private BufferedImage scaleDown(BufferedImage srcImg) {
