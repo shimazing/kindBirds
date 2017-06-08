@@ -32,13 +32,14 @@ class Replay(object):
         self.birdtypes[self.current, ...] = bird
     self.terminals[self.current] = terminal
     self.count = max(self.count, self.current + 1) # How many data?
+    print(self.count, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
     self.current = (self.current + 1) % self.memory_size # Current position
 
   def sample(self):
     # indices = []
     # TODO double check if it is work
     nonterminal = np.arange(self.count)[self.terminals[:self.count] == False]
-    indices_ = nonterminal[nonterminal != ((self.current - 1) % count)]
+    indices_ = nonterminal[nonterminal != ((self.current - 1) % self.count)]
     indices = (indices_ + 1) % self.count
     '''
     while len(indices) < self.batch_size:

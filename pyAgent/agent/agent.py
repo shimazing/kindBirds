@@ -85,6 +85,7 @@ class Agent(object):
         total_steps = 0
         eps = 0.1
         for epi in range(self.n_steps):
+            print("BBBBBBBBBBBBBBBBBBBBBBB")
             terminal = False
             action = -1
             reward = 0
@@ -92,13 +93,14 @@ class Agent(object):
             prev_state = state
             birdtype = np.zeros(3)
             prev_birdtype = birdtype
-            while terminal:
+            while not terminal:
                 terminal, reward, state, birdtype_, n_birds = \
-                        env.get_state_reward()
+                        self.env.get_state_reward()
                 birdtype = np.zeros(3)
                 if birdtype_ is not None:
                     birdtype[birdtype_] = 1
                 # TODO : replay memory edit for birdtype
+                print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
                 self.replay.add(state, birdtype, reward, action, terminal) # save state, terminal or not and reward after action
                 # add(prev_state, action, reward, state, terminal)
                 if not terminal:
@@ -108,7 +110,7 @@ class Agent(object):
                             birdtype, eps)
                     # action idx -> theta, v
                     angle, taptime = self.action_space[action]
-                    env.act(angle, taptime)
+                    self.env.act(angle, taptime)
             prestates, prebirds, actions, rewards, poststates, postbirds, terminals = self.replay.sample()
 
             if self.double_q:

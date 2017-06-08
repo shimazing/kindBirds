@@ -18,14 +18,14 @@ class Environment(object):
         print("#### {:^20} ####".format("CONNECTED"))
 
     def get_state_reward(self):
-        data = self.conn.recv(1024)
+        data = self.conn.recv(1024).decode('utf-8')
         print(data)
         data_dict = json.loads(data)
         gamestate = eval(data_dict["gamestate"])
         reward = eval(data_dict["reward"]) / 10000.
         terminal = (gamestate != 0)
         if not terminal:
-            state = np.asarray(Image.open("screenshot.png"))
+            state = np.asarray(Image.open("../screenshot.png"))
             state = state / 255.
             n_birds = eval(data_dict["birds"])
             birdtype = eval(data_dict["birdtype"]) - 4 # from 0 to 2
