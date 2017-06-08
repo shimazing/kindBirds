@@ -198,7 +198,7 @@ public class KindAgent implements Runnable{
 		
 		// zoom out first
 		ActionRobot.fullyZoomOut();
-		clickOnce();
+		//clickOnce();
 		
 		// capture image
 		BufferedImage screenshot = ActionRobot.doScreenShot();
@@ -208,6 +208,7 @@ public class KindAgent implements Runnable{
 		int numBirds = vision.findBirdsRealShape().size();
 		int reward;
 		ABType birdType = aRobot.getBirdTypeOnSling();
+		clickOnce(); // To focus blocks
 		if (firstShot) {
 			int score =GameStateExtractor.getScoreInGame(screenshot);
 			System.out.println("current score : " + String.valueOf(score));
@@ -243,7 +244,6 @@ public class KindAgent implements Runnable{
 		//List<ABObject> blocks = vision.findBlocksMBR();
 		
 		if (!pigs.isEmpty()) {
-			System.out.println(1);
 			ActionRobot.fullyZoomIn();
 			screenshot = ActionRobot.doScreenShot();
 			// gray scaled screenshot with real shapes
@@ -273,7 +273,7 @@ public class KindAgent implements Runnable{
 				stateJson.put("reward", String.valueOf(reward));
 				stateJson.put("birds", String.valueOf(numBirds));
 				stateJson.put("birdtype", String.valueOf(getBirdType(birdType)));
-			
+				
 				System.out.println(stateJson);
 				
 				OutputStreamWriter outputStreamWriter = new OutputStreamWriter(outputStream);
@@ -324,7 +324,6 @@ public class KindAgent implements Runnable{
 								List<Point> traj = vision.findTrajPoints();
 								tp.adjustTrajectory(traj, sling, release);
 								firstShot = false;
-								clickOnce();
 							}
 						}
 					}
@@ -390,12 +389,14 @@ public class KindAgent implements Runnable{
 	
 	private void clickOnce() {
 		aRobot.click();
+		/*
 		try {
 			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		*/
 	}
 	
 	private void saveScreenshot(BufferedImage screenshot, String outputfile) {
