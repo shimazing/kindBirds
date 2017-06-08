@@ -237,6 +237,9 @@ public class KindAgent implements Runnable{
 		
 		// current game state
 		GameState state = aRobot.getState();
+		if (state != GameState.PLAYING)
+			return state;
+		
 		
 		while (sling == null && state == GameState.PLAYING) {
 			System.out.println("No slingshot detected. Please remove pop up or zoom out.");
