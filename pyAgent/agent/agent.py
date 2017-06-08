@@ -83,9 +83,8 @@ class Agent(object):
         self.restore_model()
         self.target_net.run_copy()
         total_steps = 0
-        eps = 0.1
+        eps = 1
         for epi in range(self.n_steps):
-            print("BBBBBBBBBBBBBBBBBBBBBBB")
             terminal = False
             action = -1
             reward = 0
@@ -100,7 +99,6 @@ class Agent(object):
                 if birdtype_ is not None:
                     birdtype[birdtype_] = 1
                 # TODO : replay memory edit for birdtype
-                print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
                 self.replay.add(state, birdtype, reward, action, terminal) # save state, terminal or not and reward after action
                 # add(prev_state, action, reward, state, terminal)
                 if not terminal:
@@ -108,8 +106,9 @@ class Agent(object):
                     prev_birdtype = birdtype
                     action = self.pred_net.calc_eps_greedy_actions(state, \
                             birdtype, eps)
+                    print(action, "CCCCCCC")
                     # action idx -> theta, v
-                    angle, taptime = self.action_space[action]
+                    angle, taptime = self.action_space[int(action)]
                     self.env.act(angle, taptime)
             prestates, prebirds, actions, rewards, poststates, postbirds, terminals = self.replay.sample()
 
