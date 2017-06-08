@@ -231,7 +231,7 @@ public class KindAgent implements Runnable{
 		while (sling == null && state == GameState.PLAYING) {
 			System.out.println("No slingshot detected. Please remove pop up or zoom out.");
 			ActionRobot.fullyZoomOut();
-			clickOnce();
+			//clickOnce();
 			screenshot = ActionRobot.doScreenShot();
 			vision = new Vision(screenshot);
 			sling = vision.findSlingshotMBR();
@@ -243,6 +243,7 @@ public class KindAgent implements Runnable{
 		//List<ABObject> blocks = vision.findBlocksMBR();
 		
 		if (!pigs.isEmpty()) {
+			System.out.println(1);
 			ActionRobot.fullyZoomIn();
 			screenshot = ActionRobot.doScreenShot();
 			// gray scaled screenshot with real shapes
@@ -271,7 +272,7 @@ public class KindAgent implements Runnable{
 				stateJson.put("gamestate", String.valueOf(gamestate));
 				stateJson.put("reward", String.valueOf(reward));
 				stateJson.put("birds", String.valueOf(numBirds));
-				stateJson.put("birdtype", birdType);
+				stateJson.put("birdtype", String.valueOf(getBirdType(birdType)));
 			
 				System.out.println(stateJson);
 				
@@ -349,55 +350,7 @@ public class KindAgent implements Runnable{
 		
 		return state;
 	}
-	public GameState solve(int i)
-	{
-		// zoom out first
-		ActionRobot.fullyZoomOut();
-		clickOnce();
 		
-		// capture image
-		BufferedImage screenshot = ActionRobot.doScreenShot();
-		
-		// process image
-		Vision vision = new Vision(screenshot);
-		
-		// find the slingshot
-		Rectangle sling = vision.findSlingshotMBR();
-		
-		// current game state
-		GameState state = aRobot.getState();
-		
-		while (sling == null && state == GameState.PLAYING) {
-			System.out.println("No slingshot detected. Please remove pop up or zoom out.");
-			ActionRobot.fullyZoomOut();
-			clickOnce();
-			screenshot = ActionRobot.doScreenShot();
-			vision = new Vision(screenshot);
-			sling = vision.findSlingshotMBR();
-			state = aRobot.getState();
-		}
-		/*
-		// get all the pigs
-		List<ABObject> pigs = vision.findPigsMBR();
-		System.out.println(pigs.size());
-		System.out.println(pigs.get(0).id);
-		List<ABObject> blocks = vision.findBlocksMBR();
-		System.out.println(blocks.size());
-		*/
-		ActionRobot.fullyZoomIn();
-		screenshot = ActionRobot.doScreenShot();
-		// gray scaled screenshot with real shapes
-		ShowSeg.drawRealshape(screenshot);
-
-		BufferedImage destImg = scaleDown(screenshot);
-		
-	    saveScreenshot(destImg, "destImg" + String.valueOf(i) + ".png");
-		saveScreenshot(screenshot, "screenshotImage" + String.valueOf(i) + ".png");
-		
-		
-		return state;
-	}
-	
 	private BufferedImage scaleDown(BufferedImage srcImg) {
 		int destWidth = 105;
 		int destHeight = 60;
@@ -421,6 +374,16 @@ public class KindAgent implements Runnable{
 		else if (state == GameState.WON)
 			return 1;
 		else if (state == GameState.LOST)
+			return 2;
+		return -1;
+	}
+	
+	private int getBirdType(ABType bird) {
+		if (bird == ABType.RedBird)
+			return 0;
+		else if (bird == ABType.YellowBird)
+			return 1;
+		else if (bird == ABType.BlueBird)
 			return 2;
 		return -1;
 	}
