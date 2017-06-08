@@ -211,6 +211,9 @@ public class KindAgent implements Runnable{
 		
 		// process image
 		Vision vision = new Vision(screenshot);
+		if (aRobot.getState() != GameState.PLAYING)
+			return aRobot.getState();
+		
 		int numBirds = vision.findBirdsRealShape().size();
 		int reward;
 		ABType birdType = aRobot.getBirdTypeOnSling();
