@@ -1,0 +1,2 @@
+model_checkpoint_path: "kindAgent.ckpt"
+all_model_checkpoint_paths: "kindAgent.ckpt"
