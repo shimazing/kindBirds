@@ -1,6 +1,7 @@
 import tensorflow as tf
 import random
 from .layer import *
+import numpy as np
 
 class Network(object):
   def __init__(self, sess, name):
@@ -105,7 +106,7 @@ class Network(object):
     else:
         observation = observation.reshape(shape)
         birdtype = birdtype.reshape(1, -1)
-        return self.calc_actions(observation, birdtype)
+        return self.calc_actions(observation, birdtype)[0]
 
   def build_train_op(self):
     self.targets = tf.placeholder('float32', [None], name='target_q_t')
@@ -116,15 +117,27 @@ class Network(object):
     #                       reduction_indices=1,
     #                       name='q_acted')
     delta = self.targets - pred_q
+    self.priority = tf.abs(delta)
     self.loss = tf.reduce_mean(tf.square(delta))
     optimizer = tf.train.RMSPropOptimizer(self.lr, momentum=0.95, epsilon=0.01)
     self.optim = optimizer.minimize(self.loss)
 
   def optimize(self, inputs, birdtypes, actions, targets, lr):
     outputs_idx = [[idx, pred_a] for idx, pred_a in enumerate(actions)]
-    self.sess.run([self.optim], feed_dict={
+    self.sess.run(self.optim, feed_dict={
         self.inputs: inputs,
         self.birdtypes: birdtypes,
         self.outputs_idx: outputs_idx,
         self.targets: targets,
         self.lr: lr})
+
+  def get_priority(self, input, birdtype, action, target):
+    outputs_idx = [[0, action]]
+    inputs = np.expand_dims(input, axis=0)
+    birdtypes = np.expand_dims(birdtype, axis=0)
+    targets = np.expand_dims(target, axis=0)
+    return self.sess.run(self.priority, feed_dict={
+        self.inputs: inputs,
+        self.birdtypes: birdtypes,
+        self.outputs_idx: outputs_idx,
+        self.targets: targets})[0]

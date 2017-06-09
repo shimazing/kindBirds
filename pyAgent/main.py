@@ -18,7 +18,7 @@ import  csv
 flags = tf.app.flags
 
 flags.DEFINE_boolean('is_train', True, '[True/False]')
-flags.DEFINE_integer('n_batch', 100, 'batch size')
+flags.DEFINE_integer('n_batch', 2, 'batch size')
 flags.DEFINE_integer('memory_size', 100000, '...')
 flags.DEFINE_boolean('double_q', True, '...')
 flags.DEFINE_float('discount', 1, '...')

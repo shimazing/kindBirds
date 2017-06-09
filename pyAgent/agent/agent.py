@@ -1,7 +1,6 @@
 import tensorflow as tf
 import numpy as np
 import math
-from environment.environment import Environment
 from .replay import Replay
 from layer.cnn import CNN
 import os
@@ -80,6 +79,7 @@ class Agent(object):
         print(">> Total action space size : ", len(self.action_space))
 
     def train(self):
+      try:
         self.restore_model()
         self.target_net.run_copy()
         total_steps = 0
@@ -100,35 +100,91 @@ class Agent(object):
                     birdtype[birdtype_] = 1
                 # TODO : replay memory edit for birdtype
                 self.replay.add(state, birdtype, reward, action, terminal) # save state, terminal or not and reward after action
-                # add(prev_state, action, reward, state, terminal)
+                # self.replay.add(prev_state, action, reward, state, terminal)
                 if not terminal:
                     prev_state = state
                     prev_birdtype = birdtype
-                    action = self.pred_net.calc_eps_greedy_actions(state, \
-                            birdtype, eps)
-                    print(action, "CCCCCCC")
+                    action = self.pred_net.calc_eps_greedy_actions(
+                            state, birdtype, eps)
                     # action idx -> theta, v
                     angle, taptime = self.action_space[int(action)]
                     self.env.act(angle, taptime)
-            prestates, prebirds, actions, rewards, poststates, postbirds, terminals = self.replay.sample()
 
-            if self.double_q:
-                max_actions = self.pred_net.calc_actions(poststates, postbirds)
-                targets = self.target_net.calc_outputs_with_idx(poststates,
-                        postbirds,
-                    [[idx, pred_a] for idx, pred_a in enumerate(max_actions)])
-            else:
-                targets = self.target_net.calc_max_outputs(poststates, postbirds)
-            targets = targets * np.where(terminals, 0, 1)
-            targets = rewards + self.discount * targets
+            prestates = []
+            prebirds = []
+            actions = []
+            rewards = []
+            poststates = []
+            postbirds = []
+            terminals = []
+            weights = []
+            targets = []
+            for i in range(self.n_batch):
+                prestate, prebird, action, reward, poststate, postbird,\
+                        terminal, weight = self.replay.sample_one()
+                prestates.append(prestate)
+                prebirds.append(prebird)
+                actions.append(action)
+                rewards.append(reward)
+                poststates.append(poststate)
+                postbirds.append(postbird)
+                terminals.append(terminal)
+                weights.append(weight)
+                max_action = self.pred_net.calc_eps_greedy_actions(
+                        poststate, postbird, 0)
+                if not terminal:
+                    target = reward + \
+                        self.discount * self.target_net.calc_outputs_with_idx(
+                        np.expand_dims(poststate, axis=0),
+                        np.expand_dims(postbird, axis=0),
+                        [[0, max_action]])[0]
+                else:
+                    target = reward
+                targets.append(target)
+                priority = self.pred_net.get_priority(
+                        prestate, prebird, action, target)
+                # TODO: priority update
+
+            prestates = np.stack(prestates, axis=0)
+            prebirds = np.stack(prebirds, axis=0)
+            actions = np.stack(actions, axis=0)
+            rewards = np.stack(rewards, axis=0)
+            poststates = np.stack(poststates, axis=0)
+            postbirds = np.stack(postbirds, axis=0)
+            terminals = np.stack(terminals, axis=0)
+            weights = np.stack(weights, axis=0)
+            targets = np.stack(targets, axis=0)
+            # prestates, prebirds, actions, rewards, poststates, postbirds, terminals = self.replay.sample()
+
+            #if self.double_q:
+            #    max_actions = self.pred_net.calc_actions(poststates, postbirds)
+            #    targets = self.target_net.calc_outputs_with_idx(
+            #            poststates, postbirds,
+            #        [[idx, pred_a] for idx, pred_a in enumerate(max_actions)])
+            #else:
+            #    targets = self.target_net.calc_max_outputs(poststates, postbirds)
+            #targets = targets * np.where(terminals, 0, 1)
+            #targets = rewards + self.discount * targets
+
+            # TODO : make weights participate for optimization
+            print("OPTIMIZE")
             self.pred_net.optimize(prestates, prebirds, actions, targets, self.lr)
 
             if epi % self.update_freq == self.update_freq - 1:
                 self.target_net.run_copy()
-
-        # TODO : save every n steps
-        saver = tf.train.saver()
+                print("SAVE MODEL")
+                saver = tf.train.Saver()
+                saver.save(self.sess, self.save_path)
+        print("SAVE MODEL")
+        saver = tf.train.Saver()
         saver.save(self.sess, self.save_path)
+        return
+        # TODO : save every n steps
+      except KeyboardInterrupt:
+        print("SAVE MODEL")
+        saver = tf.train.Saver()
+        saver.save(self.sess, self.save_path)
+        return
 
     def test(self):
         self.restore_model()
@@ -146,4 +202,3 @@ class Agent(object):
         else:
             print("[!] Load FAILED: %s" % self.save_path)
             return False
-

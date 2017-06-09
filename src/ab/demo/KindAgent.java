@@ -364,6 +364,14 @@ public class KindAgent implements Runnable{
 	
 	private int getRandomLevel() {
 		int randomLevel = this.randomGenerator.nextInt(this.maxLevel - 1) + 1;
+		
+		System.out.println("Get Random Level");
+		System.out.println(randomLevel);
+		randomLevel = this.randomGenerator.nextInt(this.maxLevel - 1) + 1;
+		System.out.println(randomLevel);
+		randomLevel = this.randomGenerator.nextInt(this.maxLevel - 1) + 1;
+		System.out.println(randomLevel);
+		
 		return randomLevel;
 	}
 		
