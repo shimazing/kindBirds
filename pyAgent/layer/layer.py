@@ -54,7 +54,7 @@ def linear(input_,
   if birdtypes is not None:
     assert len(birdtypes.get_shape().as_list()) == 2
     input_ = tf.concat([input_, birdtypes], axis=-1)
-    shape_1 = shape_1 + 3
+    shape_1 = shape_1 + 4
   with tf.variable_scope(name):
     w = tf.get_variable('w', [shape_1, output_size], tf.float32,
         initializer=weights_initializer, trainable=trainable)
