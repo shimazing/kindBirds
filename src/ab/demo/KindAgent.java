@@ -1,13 +1,11 @@
 package ab.demo;
 
-import java.awt.Color;
 import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.image.PixelGrabber;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -15,10 +13,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +24,6 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import Jama.Matrix;
 import ab.demo.other.ActionRobot;
 import ab.demo.other.Shot;
 import ab.planner.TrajectoryPlanner;
@@ -41,13 +34,13 @@ import ab.vision.GameStateExtractor;
 import ab.vision.GameStateExtractor.GameState;
 import ab.vision.ShowSeg;
 import ab.vision.Vision;
-import ab.vision.VisionUtils;
 
 public class KindAgent implements Runnable{
 	private ActionRobot aRobot;
 	private Random randomGenerator;
-	public int currentLevel;
+	public int currentLevel = 1;
 	public int maxLevel = 21;
+	public boolean training = true;
 	private Map<Integer, Integer> scores = new LinkedHashMap<Integer,Integer>();
 	TrajectoryPlanner tp;
 	private boolean firstShot;
@@ -59,7 +52,7 @@ public class KindAgent implements Runnable{
 		tp = new TrajectoryPlanner();
 		firstShot = true;
 		randomGenerator = new Random();
-		currentLevel = getRandomLevel();
+		training = false;
 		try {
 			socket = new Socket("127.0.0.1", 9090);
 		} catch (IOException e) {
@@ -94,9 +87,9 @@ public class KindAgent implements Runnable{
 			GameState state = aRobot.getState();
 			if (state == GameState.PLAYING) {
 				try {
-				state = solve();
+					state = solve();
 				} catch (NullPointerException e) {
-					System.out.println("NullPointerException occurred within solve.");
+					System.out.println("NullPointerException occurred within solve. Try again...");
 					continue;
 				}
 			}
@@ -108,14 +101,31 @@ public class KindAgent implements Runnable{
 				int score = StateUtil.getScore(ActionRobot.proxy);
 				int reward = score - prevScore;
 				
+				if (!training) {
+					if (!scores.containsKey(currentLevel))
+						scores.put(currentLevel, score);
+					else {
+						System.out.println("Old highest score?");
+						if (scores.get(currentLevel) < score)
+							scores.put(currentLevel, score);
+					}
+					int totalScore = 0;
+					for (Integer key : scores.keySet()) {
+						totalScore += scores.get(key);
+						System.out.println(" Level " + key + " Score: " + scores.get(key));
+					}
+					System.out.println("Total Score: " + totalScore);
+				}
+				
 				// send gamestate and reward
 				try {
-					JSONObject stateJson = new JSONObject();
+					JSONObject stateJson = createJSON(state, reward, training);
 					//Map<String, int[]> stateJson = new HashMap<String, int[]>();
 					OutputStream outputStream = socket.getOutputStream();
-				
+					/*
 					stateJson.put("gamestate", String.valueOf(1));
 					stateJson.put("reward", String.valueOf(reward));
+					*/
 					System.out.println(stateJson);
 					
 					OutputStreamWriter outputStreamWriter = new OutputStreamWriter(outputStream);
@@ -131,8 +141,9 @@ public class KindAgent implements Runnable{
 				}
 				
 				prevScore = 0;
-				currentLevel = getRandomLevel();
-				aRobot.loadLevel(currentLevel);;
+				currentLevel = training? getRandomLevel() : currentLevel + 1;
+				aRobot.loadLevel(currentLevel);
+				tp = new TrajectoryPlanner();
 				firstShot = true;
 			}
 			else if (state == GameState.LOST) {
@@ -143,11 +154,13 @@ public class KindAgent implements Runnable{
 				
 				// send gamestate and reward 
 				try {
-					JSONObject stateJson = new JSONObject();
+					JSONObject stateJson = createJSON(state, reward, training);
 					//Map<String, int[]> stateJson = new HashMap<String, int[]>();
 					OutputStream outputStream = socket.getOutputStream();
+					/*
 					stateJson.put("gamestate", String.valueOf(2));
 					stateJson.put("reward", String.valueOf(reward));
+					*/
 					System.out.println(stateJson);
 					
 					OutputStreamWriter outputStreamWriter = new OutputStreamWriter(outputStream);
@@ -162,7 +175,8 @@ public class KindAgent implements Runnable{
 					e.printStackTrace();
 				}
 				prevScore = 0;
-				aRobot.restartLevel();
+				if (training)
+					aRobot.restartLevel();
 				firstShot = true;
 			}
 			else if (state == GameState.LEVEL_SELECTION) {
@@ -209,7 +223,6 @@ public class KindAgent implements Runnable{
 	{
 		// zoom out first
 		ActionRobot.fullyZoomOut();
-		//clickOnce();
 		
 		// capture image
 		BufferedImage screenshot = ActionRobot.doScreenShot();
@@ -225,15 +238,15 @@ public class KindAgent implements Runnable{
 		clickOnce(); // To focus blocks
 		if (firstShot) {
 			int score =GameStateExtractor.getScoreInGame(screenshot);
-			System.out.println("current score : " + String.valueOf(score));
+			System.out.println("Current score : " + String.valueOf(score));
 			reward = 0;
 		}
 		else {
 			int score =GameStateExtractor.getScoreInGame(screenshot);
-			System.out.println("current score : " + String.valueOf(score));
+			System.out.println("Current score : " + String.valueOf(score));
 			reward = score - prevScore;
 			prevScore = score;
-			System.out.println("reward : " + String.valueOf(reward));
+			System.out.println("Reward : " + String.valueOf(reward));
 		}
 		
 		
@@ -268,30 +281,22 @@ public class KindAgent implements Runnable{
 			
 			ActionRobot.fullyZoomOut();
 			
-			int destWidth = 105;
-			int destHeight = 60;
 			BufferedImage destImg = scaleDown(screenshot);
 			
-			int gamestate = getGameState(state);
 			try {
-				int[] imageRGB = destImg.getRGB(0, 0, destWidth, destHeight, null, 0, destWidth);
-	
-				JSONObject stateJson = new JSONObject();
+				JSONObject stateJson = createJSON(state, reward, numBirds, birdType, training);
 				//Map<String, int[]> StateJson =  new HashMap<String, int[]>();
 				//JSONObject<String, Object> json = new JSONObject<String, Object>();
-				// TODO : send screenshot, gamestate, number of birds, reward
 				OutputStream outputStream = socket.getOutputStream();
-				//ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-				//ImageIO.write(destImg, "jpg", byteArrayOutputStream);
 				
-				//stateJson.put("screenshot", Arrays.toString(imageRGB));
 				saveScreenshot(destImg, "screenshot.png");
+				/*
 				stateJson.put("gamestate", String.valueOf(gamestate));
 				stateJson.put("reward", String.valueOf(reward));
 				stateJson.put("birds", String.valueOf(numBirds));
 				stateJson.put("birdtype", String.valueOf(getBirdType(birdType)));
-				
-				System.out.println(stateJson);
+				*/
+				System.out.println("State : " + stateJson.toString());
 				
 				OutputStreamWriter outputStreamWriter = new OutputStreamWriter(outputStream);
 				PrintWriter printWriter = new PrintWriter(outputStreamWriter);
@@ -303,15 +308,13 @@ public class KindAgent implements Runnable{
 				
 				//printWriter.close();
 				
-				System.out.println("action");
-				System.out.println(action);
+				System.out.println("Action : " + action.toString());
 				JSONParser parser = new JSONParser();
 				JSONObject actionJson = (JSONObject) parser.parse(action);
 				float angle = Float.parseFloat((String) actionJson.get("angle"));
-				//float power = Float.parseFloat((String) actionJson.get("power"));
 				int taptime = Integer.parseInt((String)actionJson.get("taptime"));
-				System.out.println("angle : " + String.valueOf(angle));
-				System.out.println("taptime : " + String.valueOf(taptime));
+				System.out.println("  Angle : " + String.valueOf(angle));
+				System.out.println("  Taptime : " + String.valueOf(taptime));
 				
 				Point ref = tp.getReferencePoint(sling);
 				Point release = tp.findReleasePoint(sling, angle);
@@ -323,6 +326,7 @@ public class KindAgent implements Runnable{
 				ActionRobot.fullyZoomOut();
 				screenshot = ActionRobot.doScreenShot();
 				vision = new Vision(screenshot);
+				// Sleep??
 				Thread.sleep(1000);
 				Rectangle _sling = vision.findSlingshotMBR();
 				if(_sling != null)
@@ -332,6 +336,7 @@ public class KindAgent implements Runnable{
 					{
 						if(dx < 0)
 						{
+							//aRobot.cFastshoot(shot);
 							aRobot.cshoot(shot);
 							state = aRobot.getState();
 							if ( state == GameState.PLAYING )
@@ -365,6 +370,26 @@ public class KindAgent implements Runnable{
 		}
 		
 		return state;
+	}
+	
+	private JSONObject createJSON(GameState state, int reward, boolean training) {
+		JSONObject stateJson = new JSONObject();
+		stateJson.put("gamestate", String.valueOf(getGameState(state)));
+		if (training)
+			stateJson.put("reward", String.valueOf(reward));
+		
+		return stateJson;	
+	}
+	
+	private JSONObject createJSON(GameState state, int reward, int numBirds, ABType birdType, boolean training) {
+		JSONObject stateJson = new JSONObject();
+		stateJson.put("gamestate", String.valueOf(getGameState(state)));
+		if (training)
+			stateJson.put("reward", String.valueOf(reward));
+		stateJson.put("birds", String.valueOf(numBirds));
+		stateJson.put("birdtype", String.valueOf(getBirdType(birdType)));
+		
+		return stateJson;	
 	}
 	
 	private int getRandomLevel() {
@@ -434,7 +459,7 @@ public class KindAgent implements Runnable{
 		File file = new File(outputfile);
 		
 		try {
-			System.out.println("saving image..");
+			System.out.println("Saving image..");
 			ImageIO.write(screenshot,  "png", file);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
