@@ -110,6 +110,7 @@ class Network(object):
 
   def build_train_op(self):
     self.targets = tf.placeholder('float32', [None], name='target_q_t')
+    self.weights = tf.placeholder('float32', [None], name='weights')
     #self.actions = tf.placeholder('int64', [None], name='action')
     #actions_one_hot = tf.one_hot(self.actions, self.n_actions)
     pred_q = self.outputs_with_idx
@@ -118,18 +119,19 @@ class Network(object):
     #                       name='q_acted')
     delta = self.targets - pred_q
     self.priority = tf.abs(delta)
-    self.loss = tf.reduce_mean(tf.square(delta))
+    self.loss = tf.reduce_mean(tf.multiply(tf.square(delta), self.weights))
     optimizer = tf.train.RMSPropOptimizer(self.lr, momentum=0.95, epsilon=0.01)
     self.optim = optimizer.minimize(self.loss)
 
-  def optimize(self, inputs, birdtypes, actions, targets, lr):
+  def optimize(self, inputs, birdtypes, actions, targets, lr, weights):
     outputs_idx = [[idx, pred_a] for idx, pred_a in enumerate(actions)]
     self.sess.run(self.optim, feed_dict={
         self.inputs: inputs,
         self.birdtypes: birdtypes,
         self.outputs_idx: outputs_idx,
         self.targets: targets,
-        self.lr: lr})
+        self.lr: lr,
+        self.weights: weights})
 
   def get_priority(self, input, birdtype, action, target):
     outputs_idx = [[0, action]]

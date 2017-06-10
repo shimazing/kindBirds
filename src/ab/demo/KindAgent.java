@@ -139,7 +139,7 @@ public class KindAgent implements Runnable{
 				System.out.println("LOSE...");
 				
 				int score = StateUtil.getScore(ActionRobot.proxy);
-				int reward = score - prevScore;
+				int reward = score; // - prevScore;
 				
 				// send gamestate and reward 
 				try {
@@ -368,10 +368,11 @@ public class KindAgent implements Runnable{
 	}
 	
 	private int getRandomLevel() {
-		int randomLevel = this.randomGenerator.nextInt(this.maxLevel - 1) + 1;
-		/*
+		int randomLevel = this.randomGenerator.nextInt(this.maxLevel) + 1;
+		
 		System.out.println("Get Random Level");
 		System.out.println(randomLevel);
+		/*
 		randomLevel = this.randomGenerator.nextInt(this.maxLevel - 1) + 1;
 		System.out.println(randomLevel);
 		randomLevel = this.randomGenerator.nextInt(this.maxLevel - 1) + 1;

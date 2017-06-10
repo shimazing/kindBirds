@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import math
-from .replay import Replay
+from .replay import Replay, PrioritizedReplay
 from layer.cnn import CNN
 import os
 import sys
@@ -24,6 +24,9 @@ class Agent(object):
         self.double_q = conf.double_q
         self.discount = conf.discount
         self.pretrain_steps = conf.pretrain_steps
+        self.eps = conf.max_eps
+        self.annealing_steps = conf.annealing_steps
+        self.step = (conf.max_eps - conf.min_eps) / conf.annealing_steps
         self.max_lr = 0.01
         self.min_lr = 0.01
         self.lr = conf.lr
@@ -38,14 +41,14 @@ class Agent(object):
         self.states = tf.placeholder('float32',
                 [None] + self.observation_dims, name='states')
         self.birdtypes = tf.placeholder('float32',
-                [None, 3], name='slingbirdtype')
+                [None, 4], name='slingbirdtype')
 
         # build controllers
         self.build_Qnet()
         # env setting
         self.env = env
         # replay memory
-        self.replay = Replay(self.n_batch, self.memory_size,
+        self.replay = PrioritizedReplay(self.memory_size,
                 self.observation_dims)
 
     def build_Qnet(self):
@@ -68,9 +71,9 @@ class Agent(object):
         self.target_net.create_copy_op(self.pred_net)
 
     def define_action_space(self):
-        angles = np.arange(0.025, 0.5, 0.025) * math.pi
+        angles = np.arange(0.05, 0.4, 0.027) * math.pi
         self.n_angle = len(angles)
-        taptimes = np.arange(0, 4000, 200)
+        taptimes = np.arange(0, 4000, 300)
         self.n_taptime = len(taptimes)
         self.action_space = []
         for angle in angles:
@@ -90,22 +93,22 @@ class Agent(object):
             reward = 0
             state = None
             prev_state = state
-            birdtype = np.zeros(3)
+            birdtype = np.zeros(4)
             prev_birdtype = birdtype
             while not terminal:
                 terminal, reward, state, birdtype_, n_birds = \
                         self.env.get_state_reward()
-                birdtype = np.zeros(3)
+                birdtype = np.zeros(4)
                 if birdtype_ is not None:
                     birdtype[birdtype_] = 1
-                # TODO : replay memory edit for birdtype
-                self.replay.add(state, birdtype, reward, action, terminal) # save state, terminal or not and reward after action
-                # self.replay.add(prev_state, action, reward, state, terminal)
+                    birdtype[3] = n_birds / 10
+                self.replay.add(prev_state, prev_birdtype, action, reward,
+                                state, birdtype, terminal)
                 if not terminal:
                     prev_state = state
                     prev_birdtype = birdtype
                     action = self.pred_net.calc_eps_greedy_actions(
-                            state, birdtype, eps)
+                            state, birdtype, self.eps)
                     # action idx -> theta, v
                     angle, taptime = self.action_space[int(action)]
                     self.env.act(angle, taptime)
@@ -121,7 +124,10 @@ class Agent(object):
             targets = []
             for i in range(self.n_batch):
                 prestate, prebird, action, reward, poststate, postbird,\
-                        terminal, weight = self.replay.sample_one()
+                        terminal, weight, target = self.replay.sample_one(
+                                self.pred_net,
+                                self.target_net,
+                                self.discount)
                 prestates.append(prestate)
                 prebirds.append(prebird)
                 actions.append(action)
@@ -130,20 +136,7 @@ class Agent(object):
                 postbirds.append(postbird)
                 terminals.append(terminal)
                 weights.append(weight)
-                max_action = self.pred_net.calc_eps_greedy_actions(
-                        poststate, postbird, 0)
-                if not terminal:
-                    target = reward + \
-                        self.discount * self.target_net.calc_outputs_with_idx(
-                        np.expand_dims(poststate, axis=0),
-                        np.expand_dims(postbird, axis=0),
-                        [[0, max_action]])[0]
-                else:
-                    target = reward
                 targets.append(target)
-                priority = self.pred_net.get_priority(
-                        prestate, prebird, action, target)
-                # TODO: priority update
 
             prestates = np.stack(prestates, axis=0)
             prebirds = np.stack(prebirds, axis=0)
@@ -166,20 +159,23 @@ class Agent(object):
             #targets = targets * np.where(terminals, 0, 1)
             #targets = rewards + self.discount * targets
 
-            # TODO : make weights participate for optimization
             print("OPTIMIZE")
-            self.pred_net.optimize(prestates, prebirds, actions, targets, self.lr)
+            self.pred_net.optimize(prestates, prebirds, actions,
+                    targets, self.lr, weights)
 
             if epi % self.update_freq == self.update_freq - 1:
                 self.target_net.run_copy()
                 print("SAVE MODEL")
                 saver = tf.train.Saver()
                 saver.save(self.sess, self.save_path)
+
+            if epi > self.pretrain_steps and self.eps > self.min_eps and (self.eps - self.step) >= self.min_eps:
+                self.eps = self.eps - self.step
+
         print("SAVE MODEL")
         saver = tf.train.Saver()
         saver.save(self.sess, self.save_path)
         return
-        # TODO : save every n steps
       except KeyboardInterrupt:
         print("SAVE MODEL")
         saver = tf.train.Saver()
