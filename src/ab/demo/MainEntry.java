@@ -126,14 +126,23 @@ public class MainEntry {
 					GameImageRecorder.main(param);
 				}
 			}
-			else if (args.length == 1 && command.equalsIgnoreCase("-ka")) {
-				KindAgent ka = new KindAgent();
-				ka.run();
-			}
-			else if (args.length == 2 && command.equalsIgnoreCase("-ka")) {
-				int level = Integer.parseInt(args[1]);
-				KindAgent ka = new KindAgent(level);
-				ka.run();
+			else if (command.equalsIgnoreCase("-ka")) {
+				if (args.length == 2 && args[1].equalsIgnoreCase("-t")) {
+					System.out.println("Training mode with random level between 1 and 21");
+					KindAgent ka = new KindAgent(21);
+					ka.run();
+				} else if (args.length == 3 && args[1].equalsIgnoreCase("-t")) {
+					int maxLevel = Integer.parseInt(args[2]);
+					System.out.println("Training mode with random level between 1 and " + String.valueOf(maxLevel));
+					KindAgent ka = new KindAgent(maxLevel);
+					ka.run();
+				} else if (args.length == 3 && args[1].equalsIgnoreCase("-c")) {
+					System.out.println("Competition mode");
+					KindAgent ka = new KindAgent();
+					ka.run();
+				} else {
+					System.out.println("Please input the correct command");
+				}
 			}
 			else 
 				System.out.println("Please input the correct command");
