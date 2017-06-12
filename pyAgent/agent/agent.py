@@ -5,6 +5,7 @@ from .replay import Replay, PrioritizedReplay
 from layer.cnn import CNN
 import os
 import sys
+import pickle
 
 class Agent(object):
     def __init__(self, sess, conf, env, name='agent'):
@@ -84,9 +85,10 @@ class Agent(object):
     def train(self):
       try:
         self.restore_model()
+        if os.path.exists(os.path.join(self.save_dir, 'replay.p')):
+            with open(os.path.join(self.save_dir, 'replay.p'), 'rb') as file:
+                self.replay = pickle.load(file)
         self.target_net.run_copy()
-        total_steps = 0
-        eps = 1
         for epi in range(self.n_steps):
             terminal = False
             action = -1
@@ -96,6 +98,8 @@ class Agent(object):
             birdtype = np.zeros(4)
             prev_birdtype = birdtype
             while not terminal:
+                print("EPI", epi)
+                print("eps", self.eps)
                 terminal, reward, state, birdtype_, n_birds = \
                         self.env.get_state_reward()
                 birdtype = np.zeros(4)
@@ -168,18 +172,23 @@ class Agent(object):
                 print("SAVE MODEL")
                 saver = tf.train.Saver()
                 saver.save(self.sess, self.save_path)
-
+                with open(os.path.join(self.save_dir, 'replay.p'), 'wb') as f:
+                    pickle.dump(self.replay, f)
             if epi > self.pretrain_steps and self.eps > self.min_eps and (self.eps - self.step) >= self.min_eps:
                 self.eps = self.eps - self.step
 
         print("SAVE MODEL")
         saver = tf.train.Saver()
         saver.save(self.sess, self.save_path)
+        with open(os.path.join(self.save_dir, 'replay.p'), 'wb') as f:
+            pickle.dump(self.replay, f)
         return
       except KeyboardInterrupt:
         print("SAVE MODEL")
         saver = tf.train.Saver()
         saver.save(self.sess, self.save_path)
+        with open(os.path.join(self.save_dir, 'replay.p'), 'wb') as f:
+            pickle.dump(self.replay, f)
         return
 
     def test(self):

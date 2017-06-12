@@ -18,7 +18,7 @@ import  csv
 flags = tf.app.flags
 
 flags.DEFINE_boolean('is_train', True, '[True/False]')
-flags.DEFINE_integer('n_batch', 2, 'batch size')
+flags.DEFINE_integer('n_batch', 100, 'batch size')
 flags.DEFINE_integer('memory_size', 100000, '...')
 flags.DEFINE_boolean('double_q', True, '...')
 flags.DEFINE_float('discount', 1, '...')
@@ -27,7 +27,7 @@ flags.DEFINE_float('max_eps', 1, '...')
 flags.DEFINE_float('min_eps', 0.1, '...')
 flags.DEFINE_integer('annealing_steps', 1000, '...')
 flags.DEFINE_integer('update_freq', 30, '...')
-flags.DEFINE_float('lr', 0.0075, '...')
+flags.DEFINE_float('lr', 0.001, '...')
 flags.DEFINE_integer('depth', 3, '...')
 flags.DEFINE_string('hidden_sizes', '[]', '...')
 flags.DEFINE_integer('seed', 123, '...')

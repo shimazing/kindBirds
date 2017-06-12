@@ -86,8 +86,8 @@ class PrioritizedReplay(object):
   def __init__(self, memory_size, observation_dims=[60, 105, 3], alpha=0.7, beta=0.5):
     # memory
     self.memory_size = memory_size
-    self.prebirds = np.empty([self.memory_size, 3], dtype=np.float)
-    self.postbirds = np.empty([self.memory_size, 3], dtype=np.float)
+    self.prebirds = np.empty([self.memory_size, 4], dtype=np.float)
+    self.postbirds = np.empty([self.memory_size, 4], dtype=np.float)
     self.actions = np.empty(self.memory_size, dtype=np.uint8)
     self.rewards = np.empty(self.memory_size, dtype=np.float)
     self.terminals = np.empty(self.memory_size, dtype=np.bool)
