@@ -22,11 +22,11 @@ flags.DEFINE_integer('n_batch', 100, 'batch size')
 flags.DEFINE_integer('memory_size', 100000, '...')
 flags.DEFINE_boolean('double_q', True, '...')
 flags.DEFINE_float('discount', 1, '...')
-flags.DEFINE_float('pretrain_steps', 1000, '...')
+flags.DEFINE_float('pretrain_steps', 0, '...')
 flags.DEFINE_float('max_eps', 1, '...')
 flags.DEFINE_float('min_eps', 0.1, '...')
 flags.DEFINE_integer('annealing_steps', 1000, '...')
-flags.DEFINE_integer('update_freq', 30, '...')
+flags.DEFINE_integer('update_freq', 2, '...')
 flags.DEFINE_float('lr', 0.001, '...')
 flags.DEFINE_integer('depth', 3, '...')
 flags.DEFINE_string('hidden_sizes', '[]', '...')
@@ -50,9 +50,10 @@ def main(*args, **kwargs):
         env.create()
         env.connect_client()
         if conf.is_train:
-            agent.train()
+            while True:
+                agent.train()
         else:
-            agent.test()
+            agent.competition()
 
 
 if __name__ == '__main__':

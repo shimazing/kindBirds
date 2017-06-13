@@ -6,6 +6,7 @@ from layer.cnn import CNN
 import os
 import sys
 import pickle
+import traceback
 
 class Agent(object):
     def __init__(self, sess, conf, env, name='agent'):
@@ -27,6 +28,7 @@ class Agent(object):
         self.pretrain_steps = conf.pretrain_steps
         self.eps = conf.max_eps
         self.annealing_steps = conf.annealing_steps
+        self.min_eps = conf.min_eps
         self.step = (conf.max_eps - conf.min_eps) / conf.annealing_steps
         self.max_lr = 0.01
         self.min_lr = 0.01
@@ -87,8 +89,14 @@ class Agent(object):
         self.restore_model()
         if os.path.exists(os.path.join(self.save_dir, 'replay.p')):
             with open(os.path.join(self.save_dir, 'replay.p'), 'rb') as file:
-                self.replay = pickle.load(file)
+                try:
+                    replay = pickle.load(file)
+                    self.replay = replay
+                except:
+                    pass
+                print(self.replay.size, "CURRENT MEMORY SIZE")
         self.target_net.run_copy()
+        step = 0
         for epi in range(self.n_steps):
             terminal = False
             action = -1
@@ -98,6 +106,7 @@ class Agent(object):
             birdtype = np.zeros(4)
             prev_birdtype = birdtype
             while not terminal:
+                step += 1
                 print("EPI", epi)
                 print("eps", self.eps)
                 terminal, reward, state, birdtype_, n_birds = \
@@ -117,64 +126,68 @@ class Agent(object):
                     angle, taptime = self.action_space[int(action)]
                     self.env.act(angle, taptime)
 
-            prestates = []
-            prebirds = []
-            actions = []
-            rewards = []
-            poststates = []
-            postbirds = []
-            terminals = []
-            weights = []
-            targets = []
-            for i in range(self.n_batch):
-                prestate, prebird, action, reward, poststate, postbird,\
-                        terminal, weight, target = self.replay.sample_one(
-                                self.pred_net,
-                                self.target_net,
-                                self.discount)
-                prestates.append(prestate)
-                prebirds.append(prebird)
-                actions.append(action)
-                rewards.append(reward)
-                poststates.append(poststate)
-                postbirds.append(postbird)
-                terminals.append(terminal)
-                weights.append(weight)
-                targets.append(target)
+                print("OPTIMIZE")
+                for j in range(50):
+                    prestates = []
+                    prebirds = []
+                    actions = []
+                    rewards = []
+                    poststates = []
+                    postbirds = []
+                    terminals = []
+                    weights = []
+                    targets = []
 
-            prestates = np.stack(prestates, axis=0)
-            prebirds = np.stack(prebirds, axis=0)
-            actions = np.stack(actions, axis=0)
-            rewards = np.stack(rewards, axis=0)
-            poststates = np.stack(poststates, axis=0)
-            postbirds = np.stack(postbirds, axis=0)
-            terminals = np.stack(terminals, axis=0)
-            weights = np.stack(weights, axis=0)
-            targets = np.stack(targets, axis=0)
-            # prestates, prebirds, actions, rewards, poststates, postbirds, terminals = self.replay.sample()
+                    for i in range(self.n_batch):
+                        prestate, prebird, action_, reward_, poststate, postbird,\
+                                terminal_, weight, target = self.replay.sample_one(
+                                        self.pred_net,
+                                        self.target_net,
+                                        self.discount)
+                        prestates.append(prestate)
+                        prebirds.append(prebird)
+                        actions.append(action_)
+                        rewards.append(reward_)
+                        poststates.append(poststate)
+                        postbirds.append(postbird)
+                        terminals.append(terminal_)
+                        weights.append(weight)
+                        targets.append(target)
 
-            #if self.double_q:
-            #    max_actions = self.pred_net.calc_actions(poststates, postbirds)
-            #    targets = self.target_net.calc_outputs_with_idx(
-            #            poststates, postbirds,
-            #        [[idx, pred_a] for idx, pred_a in enumerate(max_actions)])
-            #else:
-            #    targets = self.target_net.calc_max_outputs(poststates, postbirds)
-            #targets = targets * np.where(terminals, 0, 1)
-            #targets = rewards + self.discount * targets
+                    prestates = np.stack(prestates, axis=0)
+                    prebirds = np.stack(prebirds, axis=0)
+                    actions = np.stack(actions, axis=0)
+                    rewards = np.stack(rewards, axis=0)
+                    poststates = np.stack(poststates, axis=0)
+                    postbirds = np.stack(postbirds, axis=0)
+                    terminals = np.stack(terminals, axis=0)
+                    weights = np.stack(weights, axis=0)
+                    targets = np.stack(targets, axis=0)
+                    # prestates, prebirds, actions, rewards, poststates, postbirds, terminals = self.replay.sample()
 
-            print("OPTIMIZE")
-            self.pred_net.optimize(prestates, prebirds, actions,
-                    targets, self.lr, weights)
+                    #if self.double_q:
+                    #    max_actions = self.pred_net.calc_actions(poststates, postbirds)
+                    #    targets = self.target_net.calc_outputs_with_idx(
+                    #            poststates, postbirds,
+                    #        [[idx, pred_a] for idx, pred_a in enumerate(max_actions)])
+                    #else:
+                    #    targets = self.target_net.calc_max_outputs(poststates, postbirds)
+                    #targets = targets * np.where(terminals, 0, 1)
+                    #targets = rewards + self.discount * targets
 
-            if epi % self.update_freq == self.update_freq - 1:
+                    self.pred_net.optimize(prestates, prebirds, actions,
+                            targets, self.lr, weights)
+                print("Optimized")
+            if step % self.update_freq == self.update_freq - 1:
                 self.target_net.run_copy()
+            if (step + 1) % 100 == 0:
                 print("SAVE MODEL")
                 saver = tf.train.Saver()
                 saver.save(self.sess, self.save_path)
                 with open(os.path.join(self.save_dir, 'replay.p'), 'wb') as f:
                     pickle.dump(self.replay, f)
-            if epi > self.pretrain_steps and self.eps > self.min_eps and (self.eps - self.step) >= self.min_eps:
+                print("SAVE DONE")
+            if step > self.pretrain_steps and self.eps > self.min_eps and (self.eps - self.step) >= self.min_eps:
                 self.eps = self.eps - self.step
 
         print("SAVE MODEL")
@@ -182,18 +195,45 @@ class Agent(object):
         saver.save(self.sess, self.save_path)
         with open(os.path.join(self.save_dir, 'replay.p'), 'wb') as f:
             pickle.dump(self.replay, f)
+        print("SAVE DONE")
         return
-      except KeyboardInterrupt:
+      except:
         print("SAVE MODEL")
         saver = tf.train.Saver()
         saver.save(self.sess, self.save_path)
         with open(os.path.join(self.save_dir, 'replay.p'), 'wb') as f:
             pickle.dump(self.replay, f)
+        print("SAVE DONE")
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        traceback.print_tb(exc_traceback, file=sys.stdout)
         return
 
-    def test(self):
-        self.restore_model()
-        pass
+    def competition(self):
+        if not self.restore_model():
+            return
+        lost = False
+        while not lost:
+            terminal = False
+            action = -1
+            state = None
+            while not terminal:
+                terminal, gamestate, state, birdtype_, n_birds = \
+                        self.env.get_state()
+                birdtype = np.zeros(4)
+                if birdtype_ is not None:
+                    birdtype[birdtype_] = 1
+                    birdtype[3] = n_birds / 10
+                if not terminal:
+                    action = self.pred_net.calc_eps_greedy_actions(
+                            state, birdtype)
+                    angle, taptime = self.action_space[int(action)]
+                    self.env.act(angle, taptime)
+                else:
+                    lost = (gamestate == 2)
+        print("Game Over")
+
+
+
 
     def restore_model(self):
         ckpt = tf.train.get_checkpoint_state(self.save_dir)

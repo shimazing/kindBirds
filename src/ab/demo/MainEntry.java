@@ -20,6 +20,10 @@ public class MainEntry {
 	public static void main(String args[])
 	{
 		String command = "";
+		System.out.println("Argument Length !!!!!!!!");
+		System.out.println(args.length);
+		System.out.println(args[0]);
+		System.out.println(args[1]);
 		if(args.length > 0)
 		{
 			command = args[0];
@@ -127,6 +131,7 @@ public class MainEntry {
 				}
 			}
 			else if (command.equalsIgnoreCase("-ka")) {
+				System.out.println("Here!!!!!");
 				if (args.length == 2 && args[1].equalsIgnoreCase("-t")) {
 					System.out.println("Training mode with random level between 1 and 21");
 					KindAgent ka = new KindAgent(21);
@@ -136,7 +141,7 @@ public class MainEntry {
 					System.out.println("Training mode with random level between 1 and " + String.valueOf(maxLevel));
 					KindAgent ka = new KindAgent(maxLevel);
 					ka.run();
-				} else if (args.length == 3 && args[1].equalsIgnoreCase("-c")) {
+				} else if (args.length == 2 && args[1].equalsIgnoreCase("-c")) {
 					System.out.println("Competition mode");
 					KindAgent ka = new KindAgent();
 					ka.run();

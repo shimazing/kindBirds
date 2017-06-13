@@ -102,8 +102,10 @@ class Network(object):
     shape = [1] + list(observation.shape)
     assert len(shape) == 4
     if random.random() < eps:
+        print("Random Action")
         return random.randint(0, self.output_size - 1)
     else:
+        print("Greedy Action")
         observation = observation.reshape(shape)
         birdtype = birdtype.reshape(1, -1)
         return self.calc_actions(observation, birdtype)[0]

@@ -36,6 +36,22 @@ class Environment(object):
         print("Get state and reward")
         return terminal, reward, state, birdtype, n_birds
 
+    def get_state(self):
+        data = self.conn.recv(1024).decode('utf-8')
+        print(data)
+        data_dict = json.loads(data)
+        gamestate = eval(data_dict["gamestate"])
+        terminal = (gamestate != 0)
+        if not terminal:
+            state = np.asarray(Image.open("../screenshot_.png"))
+            state = state / 255.
+            n_birds = eval(data_dict["birds"])
+            birdtype = eval(data_dict["birdtype"]) # from 0 to 2
+        else:
+            state = n_birds = birdtype = None
+        print("Get state and reward")
+        return terminal, gamestate, state, birdtype, n_birds
+
     '''
     def get_state_reward(self):
         data = self.conn.recv(1024)

@@ -288,8 +288,13 @@ public class KindAgent implements Runnable{
 				//Map<String, int[]> StateJson =  new HashMap<String, int[]>();
 				//JSONObject<String, Object> json = new JSONObject<String, Object>();
 				OutputStream outputStream = socket.getOutputStream();
-				
-				saveScreenshot(destImg, "screenshot.png");
+				if (training) {
+					saveScreenshot(destImg, "screenshot.png");
+				}
+				else {
+					System.out.println("Save screenshow_");
+					saveScreenshot(destImg, "screenshot_.png");
+				}
 				/*
 				stateJson.put("gamestate", String.valueOf(gamestate));
 				stateJson.put("reward", String.valueOf(reward));

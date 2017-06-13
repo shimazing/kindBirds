@@ -6,6 +6,9 @@ import sys
 import math
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
+from scipy.misc import logsumexp
+
+
 class Replay(object):
   def __init__(self, batch_size, memory_size, observation_dims=[15]):
     self.batch_size = batch_size
@@ -152,7 +155,7 @@ class PrioritizedReplay(object):
   def sample_one(self, pred_net, target_net, discount):
     priority_list = self.get_priority()
     # sample transition
-    prob_priority = np.array(priority_list) ** self.alpha
+    prob_priority = np.array(priority_list, dtype=np.float64) ** self.alpha
     prob_priority = prob_priority / np.sum(prob_priority)
     selected_idx = np.random.multinomial(1,prob_priority)
     selected_idx = np.where(selected_idx == 1)[0][0]
