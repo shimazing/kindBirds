@@ -131,7 +131,6 @@ public class MainEntry {
 				}
 			}
 			else if (command.equalsIgnoreCase("-ka")) {
-				System.out.println("Here!!!!!");
 				if (args.length == 2 && args[1].equalsIgnoreCase("-t")) {
 					System.out.println("Training mode with random level between 1 and 21");
 					KindAgent ka = new KindAgent(21);
@@ -141,11 +140,24 @@ public class MainEntry {
 					System.out.println("Training mode with random level between 1 and " + String.valueOf(maxLevel));
 					KindAgent ka = new KindAgent(maxLevel);
 					ka.run();
+				} else if (args.length == 4 && args[1].equalsIgnoreCase("-t")) {
+					int minLevel = Integer.parseInt(args[2]);
+					int maxLevel = Integer.parseInt(args[3]);
+					System.out.println("Training mode with random level between " + String.valueOf(minLevel)
+										+ " and " + String.valueOf(maxLevel));
+					KindAgent ka = new KindAgent(minLevel, maxLevel);
+					ka.run();
 				} else if (args.length == 2 && args[1].equalsIgnoreCase("-c")) {
-					System.out.println("Competition mode");
+					System.out.println("Competition mode from level 1");
 					KindAgent ka = new KindAgent();
 					ka.run();
-				} else {
+				} else if (args.length == 3 && args[1].equalsIgnoreCase("-c")) {
+					int level = Integer.parseInt(args[2]);
+					System.out.println("Competition mode with level " + String.valueOf(level));
+					KindAgent ka = new KindAgent(level, true);
+					ka.run();
+				}
+				else {
 					System.out.println("Please input the correct command");
 				}
 			}

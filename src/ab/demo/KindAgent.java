@@ -39,8 +39,10 @@ public class KindAgent implements Runnable{
 	private ActionRobot aRobot;
 	private Random randomGenerator;
 	public int currentLevel = 1;
+	public int minLevel = 1;
 	public int maxLevel = 21;
 	public boolean training = true;
+	public boolean test = false;
 	private Map<Integer, Integer> scores = new LinkedHashMap<Integer,Integer>();
 	TrajectoryPlanner tp;
 	private boolean firstShot;
@@ -53,6 +55,24 @@ public class KindAgent implements Runnable{
 		firstShot = true;
 		randomGenerator = new Random();
 		training = false;
+		try {
+			socket = new Socket("127.0.0.1", 9090);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		// --- go to the Poached Eggs episode level selection page ---
+		ActionRobot.GoFromMainMenuToLevelSelection();
+	}
+	
+	public KindAgent(int level, boolean testing) {
+		aRobot = new ActionRobot();
+		tp = new TrajectoryPlanner();
+		firstShot = true;
+		randomGenerator = new Random();
+		currentLevel = level;
+		training = false;
+		test = testing;
 		try {
 			socket = new Socket("127.0.0.1", 9090);
 		} catch (IOException e) {
@@ -78,6 +98,25 @@ public class KindAgent implements Runnable{
 		}
 		// --- go to the Poached Eggs episode level selection page ---
 		ActionRobot.GoFromMainMenuToLevelSelection();
+	}
+	
+	public KindAgent(int minlevel, int maxlevel) {
+		aRobot = new ActionRobot();
+		tp = new TrajectoryPlanner();
+		firstShot = true;
+		randomGenerator = new Random();
+		minLevel = minlevel;
+		maxLevel = maxlevel;
+		currentLevel = getRandomLevel();
+		try {
+			socket = new Socket("127.0.0.1", 9090);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		// --- go to the Poached Eggs episode level selection page ---
+		ActionRobot.GoFromMainMenuToLevelSelection();
+		
 	}
 	
 	public void run() {
@@ -142,9 +181,11 @@ public class KindAgent implements Runnable{
 				
 				prevScore = 0;
 				currentLevel = training? getRandomLevel() : currentLevel + 1;
-				aRobot.loadLevel(currentLevel);
-				tp = new TrajectoryPlanner();
-				firstShot = true;
+				if (!test) {
+					aRobot.loadLevel(currentLevel);
+					tp = new TrajectoryPlanner();
+					firstShot = true;
+				}
 			}
 			else if (state == GameState.LOST) {
 				System.out.println("LOSE...");
@@ -398,7 +439,7 @@ public class KindAgent implements Runnable{
 	}
 	
 	private int getRandomLevel() {
-		int randomLevel = this.randomGenerator.nextInt(this.maxLevel) + 1;
+		int randomLevel = this.minLevel + this.randomGenerator.nextInt(this.maxLevel - this.minLevel + 1);
 		
 		System.out.println("Get Random Level");
 		System.out.println(randomLevel);
