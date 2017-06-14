@@ -186,6 +186,8 @@ public class KindAgent implements Runnable{
 					aRobot.loadLevel(currentLevel);
 					tp = new TrajectoryPlanner();
 					firstShot = true;
+				} else {
+					break;
 				}
 			}
 			else if (state == GameState.LOST) {
@@ -217,9 +219,12 @@ public class KindAgent implements Runnable{
 					e.printStackTrace();
 				}
 				prevScore = 0;
-				if (training)
+				if (training) {
 					aRobot.restartLevel();
-				firstShot = true;
+					firstShot = true;
+				} else {
+					break;
+				}
 			}
 			else if (state == GameState.LEVEL_SELECTION) {
 				System.out
