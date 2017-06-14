@@ -152,7 +152,8 @@ class PrioritizedReplay(object):
     return list(map(lambda x: x[0], self.priority_queue.values()))
     #return list(map(lambda x: x[0], self.priority_queue.values()))[0:self.size]
 
-  def sample_one(self, pred_net, target_net, discount):
+  def sample_one(self, pred_net, target_net, discount, beta):
+    self.beta = beta
     priority_list = self.get_priority()
     # sample transition
     prob_priority = np.array(priority_list, dtype=np.float64) ** self.alpha

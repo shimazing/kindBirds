@@ -105,7 +105,8 @@ class Network(object):
         print("Random Action")
         return random.randint(0, self.output_size - 1)
     else:
-        print("Greedy Action")
+        if eps != 0:
+            print("Greedy Action")
         observation = observation.reshape(shape)
         birdtype = birdtype.reshape(1, -1)
         return self.calc_actions(observation, birdtype)[0]

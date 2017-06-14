@@ -128,6 +128,7 @@ public class KindAgent implements Runnable{
 				try {
 					state = solve();
 				} catch (NullPointerException e) {
+					
 					System.out.println("NullPointerException occurred within solve. Try again...");
 					continue;
 				}
@@ -277,16 +278,14 @@ public class KindAgent implements Runnable{
 		int reward;
 		ABType birdType = aRobot.getBirdTypeOnSling();
 		clickOnce(); // To focus blocks
+		int score = GameStateExtractor.getScoreInGame(screenshot);
 		if (firstShot) {
-			int score =GameStateExtractor.getScoreInGame(screenshot);
 			System.out.println("Current score : " + String.valueOf(score));
 			reward = 0;
 		}
 		else {
-			int score =GameStateExtractor.getScoreInGame(screenshot);
 			System.out.println("Current score : " + String.valueOf(score));
 			reward = score - prevScore;
-			prevScore = score;
 			System.out.println("Reward : " + String.valueOf(reward));
 		}
 		
@@ -383,6 +382,7 @@ public class KindAgent implements Runnable{
 						if(dx < 0)
 						{
 							//aRobot.cFastshoot(shot);
+							prevScore = score;
 							aRobot.cshoot(shot);
 							state = aRobot.getState();
 							if ( state == GameState.PLAYING )

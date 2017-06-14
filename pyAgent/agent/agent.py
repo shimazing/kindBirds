@@ -34,6 +34,9 @@ class Agent(object):
         self.min_lr = 0.01
         self.lr = conf.lr
         self.update_freq = conf.update_freq
+        self.beta = 0.5
+        self.beta_step = - 0.5 / conf.annealing_steps
+
         try:
             self.depth = conf.depth
         except AttributeError:
@@ -84,6 +87,86 @@ class Agent(object):
                 self.action_space.append((angle, taptime))
         print(">> Total action space size : ", len(self.action_space))
 
+    def train_replay(self):
+      try:
+        self.restore_model()
+        if os.path.exists(os.path.join(self.save_dir, 'replay.p')):
+            with open(os.path.join(self.save_dir, 'replay.p'), 'rb') as file:
+                try:
+                    replay = pickle.load(file)
+                    self.replay = replay
+                except:
+                    print("No replay")
+                    return
+                    pass
+                print(self.replay.size, "CURRENT MEMORY SIZE")
+        self.target_net.run_copy()
+        step = 0
+        print("OPTIMIZE")
+
+        for j in range(10000):
+            prestates = []
+            prebirds = []
+            actions = []
+            rewards = []
+            poststates = []
+            postbirds = []
+            terminals = []
+            weights = []
+            targets = []
+
+            for i in range(self.n_batch):
+                prestate, prebird, action_, reward_, poststate, postbird,\
+                        terminal_, weight, target = self.replay.sample_one(
+                                self.pred_net,
+                                self.target_net,
+                                self.discount)
+                if reward_ < 0:
+                    reward_ = -1
+                prestates.append(prestate)
+                prebirds.append(prebird)
+                actions.append(action_)
+                rewards.append(reward_)
+                poststates.append(poststate)
+                postbirds.append(postbird)
+                terminals.append(terminal_)
+                weights.append(weight)
+                targets.append(target)
+
+            prestates = np.stack(prestates, axis=0)
+            prebirds = np.stack(prebirds, axis=0)
+            actions = np.stack(actions, axis=0)
+            rewards = np.stack(rewards, axis=0)
+            poststates = np.stack(poststates, axis=0)
+            postbirds = np.stack(postbirds, axis=0)
+            terminals = np.stack(terminals, axis=0)
+            weights = np.stack(weights, axis=0)
+            targets = np.stack(targets, axis=0)
+
+            self.pred_net.optimize(prestates, prebirds, actions,
+                    targets, self.lr, weights)
+            print("Optimized")
+            step += 1
+            if step % 100 == 100 - 1:
+                self.target_net.run_copy()
+                print(step)
+            if step > self.pretrain_steps and self.eps > self.min_eps and (self.eps - self.step) >= self.min_eps:
+                self.eps = self.eps - self.step
+
+        print("SAVE MODEL")
+        saver = tf.train.Saver()
+        saver.save(self.sess, self.save_path)
+        print("SAVE DONE")
+        return
+      except:
+        print("SAVE MODEL")
+        saver = tf.train.Saver()
+        saver.save(self.sess, self.save_path)
+        print("SAVE DONE")
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        traceback.print_tb(exc_traceback, file=sys.stdout)
+        return
+
     def train(self):
       try:
         self.restore_model()
@@ -93,6 +176,8 @@ class Agent(object):
                     replay = pickle.load(file)
                     self.replay = replay
                 except:
+                    print("No replay")
+                    return
                     pass
                 print(self.replay.size, "CURRENT MEMORY SIZE")
         self.target_net.run_copy()
@@ -105,6 +190,7 @@ class Agent(object):
             prev_state = state
             birdtype = np.zeros(4)
             prev_birdtype = birdtype
+            first_shot = True
             while not terminal:
                 step += 1
                 print("EPI", epi)
@@ -115,7 +201,8 @@ class Agent(object):
                 if birdtype_ is not None:
                     birdtype[birdtype_] = 1
                     birdtype[3] = n_birds / 10
-                self.replay.add(prev_state, prev_birdtype, action, reward,
+                if not first_shot:
+                    self.replay.add(prev_state, prev_birdtype, action, reward,
                                 state, birdtype, terminal)
                 if not terminal:
                     prev_state = state
@@ -125,6 +212,7 @@ class Agent(object):
                     # action idx -> theta, v
                     angle, taptime = self.action_space[int(action)]
                     self.env.act(angle, taptime)
+                    first_shot = False
 
                 print("OPTIMIZE")
                 for j in range(50):
@@ -143,7 +231,10 @@ class Agent(object):
                                 terminal_, weight, target = self.replay.sample_one(
                                         self.pred_net,
                                         self.target_net,
-                                        self.discount)
+                                        self.discount,
+                                        self.beta)
+                        if reward_ < 0:
+                            reward_ = -1
                         prestates.append(prestate)
                         prebirds.append(prebird)
                         actions.append(action_)
@@ -189,6 +280,9 @@ class Agent(object):
                 print("SAVE DONE")
             if step > self.pretrain_steps and self.eps > self.min_eps and (self.eps - self.step) >= self.min_eps:
                 self.eps = self.eps - self.step
+                self.beta = self.beta - self.beta_step
+                if self.beta > 1:
+                    self.beta = 1
 
         print("SAVE MODEL")
         saver = tf.train.Saver()
