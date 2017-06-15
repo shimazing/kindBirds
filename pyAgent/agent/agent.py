@@ -120,8 +120,9 @@ class Agent(object):
                         terminal_, weight, target = self.replay.sample_one(
                                 self.pred_net,
                                 self.target_net,
-                                self.discount)
-                if reward_ < 0:
+                                self.discount,
+                                self.beta)
+                if reward_ <= 0:
                     reward_ = -1
                 prestates.append(prestate)
                 prebirds.append(prebird)
@@ -152,6 +153,10 @@ class Agent(object):
                 print(step)
             if step > self.pretrain_steps and self.eps > self.min_eps and (self.eps - self.step) >= self.min_eps:
                 self.eps = self.eps - self.step
+                if self.beta < 1:
+                    self.beta = self.beta - self.beta_step
+                    if self.beta > 1:
+                        self.beta = 1
 
         print("SAVE MODEL")
         saver = tf.train.Saver()
@@ -233,7 +238,7 @@ class Agent(object):
                                         self.target_net,
                                         self.discount,
                                         self.beta)
-                        if reward_ < 0:
+                        if reward_ <= 0:
                             reward_ = -1
                         prestates.append(prestate)
                         prebirds.append(prebird)

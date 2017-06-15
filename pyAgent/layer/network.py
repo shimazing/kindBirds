@@ -1,3 +1,4 @@
+"""Modification of https://github.com/carpedm20/deep-rl-tensorflow/blob/master/networks/network.py"""
 import tensorflow as tf
 import random
 from .layer import *

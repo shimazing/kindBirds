@@ -1,3 +1,4 @@
+"""Modification of https://github.com/carpedm20/deep-rl-tensorflow/blob/master/networks/layers.py"""
 import tensorflow as tf
 from functools import reduce
 from tensorflow.contrib.layers.python.layers import initializers

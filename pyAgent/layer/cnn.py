@@ -1,3 +1,4 @@
+"""Modification of https://github.com/carpedm20/deep-rl-tensorflow/blob/master/networks/cnn.py"""
 import os
 import tensorflow as tf
 
